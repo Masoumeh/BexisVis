@@ -18,18 +18,18 @@ and open the template in the editor.
 <link href="stylesheets/dc.css" type="text/css">
 <style type="text/css"></style>
  <link rel="stylesheet" type="text/css" href="http://www.techsfo.com/js/dc.js/v1.4.0/dc.css"/>
+  <!--<link rel="stylesheet" type="text/css" href="stylesheet/dc.js"/>-->
 </head>
     
 <body>
     
     <div class='container'>
-    <div class='content'>
-        <h1> Timeline with dc.js</h1>
-    <!--    <a class="reset" href="javascript:timeChart.filterAll();dc.redrawAll();">reset</a>-->
-        
     </div> 
-    <div id='monthChart'></div>
+    <div id='monthChart'></div>        
 
+    <div class='content'>
+        <!--<h1> Timeline with dc.js</h1>-->
+        <!--    <a class="reset" href="javascript:timeChart.filterAll();dc.redrawAll();">reset</a>-->
    </div>
     
 <script>
@@ -55,7 +55,7 @@ and open the template in the editor.
          var y = date.getFullYear();
          var m = date.getMonth() + 1
          // For invalid year values like "200" or those which don't have aany value (i.e. STARTDATE = "")
-         d.STARTDATE = moment((isNaN(y) || y < 1970 || y > moment())? "1970" : y + "-" + m + "-01" ).format("YYYY-MM-DD");
+         d.STARTDATE = moment((isNaN(y) || y < 1997 || y > moment())? "1996" : y + "-" + m + "-01" ).format("YYYY-MM-DD");
          d.STARTDATE = dateFormat.parse(d.STARTDATE);
          d.year = d3.time.year(d.STARTDATE);
          d.month = d3.time.month(d.STARTDATE);
@@ -88,27 +88,33 @@ and open the template in the editor.
     });
       var minDate = timeline.bottom(1)[0];
       minDate = new Date(minDate.STARTDATE);
+      console.log()
       var maxDate = timeline.top(1)[0];
       maxDate = new Date(maxDate.STARTDATE);
-        
       
+      var runMin = +timeline.bottom(1)[0];
+      
+      var runMax = +timeline.top(1)[0];
+
             // For datatable
       /********* Step4: Create the Visualisations ****/
       timeChart
               .width(1000)
-              .height(200)
-               .x(d3.time.scale().domain([minDate, maxDate]))
+              .height(100)
+              .x(d3.time.scale().domain([minDate, maxDate]))
               .xAxis(d3.svg.axis()
                      //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
                      .orient("bottom"))
                      //.tickFormat(d3.time.format("%Y")))
             
-             // .brushOn(false)
-              .margins({top: 10, right: 20, bottom: 30, left: 10})
+              //.brushOn(false)
+              //.yAxis().ticks(8)
+              .margins({top: 10, right: 20, bottom: 30, left: 40})
               .dimension(timeline)
-              .mouseZoomable(true)
+             // .mouseZoomable(true)
               //.rangeChart(monthChart)
               .group(monthlyGroup)
+              //.elasticY(true)
               //.colors(["#E2F2FF", "#C4E4FF", "#9ED2FF", "#81C5FF", "#6BBAFF", "#51AEFF", "#36A2FF", "#1E96FF", "#0089FF", "#0061B5"])
               //.colorDomain([0,maxDate])
 //                .on("renderlet", function(timeChart)
@@ -117,29 +123,42 @@ and open the template in the editor.
 //                     console.log("click!", d);
 //                 });
 //             });
-        // .transitionDuration(500)
-              
-        .rangeChart(monthChart)
-        .brushOn(false)      
-        .render();
+         .transitionDuration(500)
+        .centerBar(true);
+           timeChart.yAxis().ticks(10);   
+//        .rangeChart(monthChart)
+//        .brushOn(false)      
+        //.render();
     
     monthChart
         .renderArea(true)
         .width(990)
-        .height(200)
+        .height(400)
         //.transitionDuration(1000)
         //.mouseZoomable(true)
-        .margins({top: 10, right: 20, bottom: 30, left: 10})
+        .margins({top: 10, right: 20, bottom: 30, left: 40})
         .dimension(timeline)
+        .brushOn(false)
+        .elasticY(true)
         .group(timelinegp)
+        .rangeChart(timeChart)
         .x(d3.time.scale().domain([minDate, maxDate]))
+        
+        //.y(d3.scale.linear().domain([dsNumMin, dsNumMax]))
         .round(d3.time.month.round)
         .xUnits(d3.time.months)
+        //.xAxis().ticks(20)
+
+//        .yAxis(d3.svg.axis()
+//        .ticks(10));
           .xAxis(d3.svg.axis()
                 //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
                 .orient("bottom")
-                .tickFormat(d3.time.format("%b %Y")))
+                .tickFormat(d3.time.format("%b %Y")));
+        
+        //monthChart.yAxis().ticks(16);
         monthChart.render();
+        timeChart.render();
         //dc.renderAll();
     });
        
