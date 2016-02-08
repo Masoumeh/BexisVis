@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta content='width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0' name='viewport'>
+<script src="http://www.techsfo.com/js/d3/v3.2.8/d3.min.js" type='text/javascript'></script>
+<script src="http://www.techsfo.com/js/crossfilter/v1.2.0/crossfilter.min.js" type='text/javascript'></script>
+<script src="http://www.techsfo.com/js/dc.js/v1.4.0/dc.min.js" type='text/javascript'></script>
+<script src='javascripts/jquery-1.9.1.min.js' type='text/javascript'></script>
+<script src='javascripts/bootstrap.min.js' type='text/javascript'></script>
+<script src="javascripts/moment.js"></script>
+<link href='stylesheets/bootstrap.min.css' rel='stylesheet' type='text/css'>
+<link href="stylesheets/dc.css" type="text/css">
+<style type="text/css"></style>
+ <link rel="stylesheet" type="text/css" href="http://www.techsfo.com/js/dc.js/v1.4.0/dc.css"/>
+  <!--<link rel="stylesheet" type="text/css" href="stylesheet/dc.js"/>-->
+</head>
+    
+<body>
+    
+    <div class='container'>
+    </div> 
+    <div id='monthChart'></div>        
+
+    <div class='content'>
+        <!--<h1> Timeline with dc.js</h1>-->
+        <!--    <a class="reset" href="javascript:timeChart.filterAll();dc.redrawAll();">reset</a>-->
+   </div>
+    
+<script>
+//    String.prototype.replaceAt=function(character) {
+//    return character + this.substr(2, this.length);
+//    };
+//    Date.prototype.yyyymmdd = function() {
+//      var yyyy = this.getFullYear().toString();
+//      var mm = (this.getMonth()+1).toString(); // getMonth() is zero-based
+//      //var dd  = "01";
+//      return yyyy + "-" + (mm[1]?mm:"0"+mm[0]) + "-" + "01"; 
+//    };
+/***       Step0: Load data ****/	
+       var dataStr= [];
+       var dateFormat = d3.time.format("%Y-%m-%d");
+       d3.json("data/testData2.json", function (data) {
+         data.forEach(function (d){
+             //console.log("id: ", d.DATASETID);
+             //console.log("sdate1: ", d.STARTDATE);
+        d.STARTDATE = moment(d.STARTDATE, ['D.MM.YY','D.M.YY','DD.MM.YY','DD.M.YY','DD:MM:YY','D/M/YYYY', 'DD-MM-YYYY', 'MM-DD-YYYY', 
+            'DD/MM/YYYY', 'DD/MM/YYYY HH:MM', 'DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY DD MM', 'DD:MM:YYYY', 'DD.MM.YYYY', 'YYYY', 'YYYY MM']
+);
+//console.log("sdate2: ", d.STARTDATE);
+//console.log("edate1: ", d.ENDDATE);
+//console.log("edate2: ", d.ENDDATE);
+        d.ENDDATE = moment(d.ENDDATE, ['D.MM.YY','D.M.YY','DD.MM.YY','DD.M.YY','DD:MM:YY','D/M/YYYY', 'DD-MM-YYYY', 'MM-DD-YYYY', 
+            'DD/MM/YYYY', 'DD/MM/YYYY HH:MM', 'DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY DD MM', 'DD:MM:YYYY', 'DD.MM.YYYY', 'YYYY', 'YYYY MM']
+);
+        var sDate = new Date(d.STARTDATE);
+//        console.log("id: ", d.DATASETID);
+//        console.log("sDate: ", sDate);
+         var eDate = new Date(d.ENDDATE);
+//        console.log("eDate: ", eDate);
+        var sY = sDate.getFullYear();
+//        console.log("sY: ", sY);
+        var sM = sDate.getMonth() + 1;
+//        console.log("sM: ", sM);
+        var eY = eDate.getFullYear();
+//        console.log("eY: ", eY);
+        var eM = eDate.getMonth() + 1; 
+//        console.log("eM: ", eM);
+        // For invalid year values like "200" or those which don't have aany value (i.e. STARTDATE = "")
+         d.STARTDATE = moment((isNaN(sY) || sY < 1997 || sY > moment())? "1996" : sY + "-" + sM + "-01" ).format("YYYY-MM-DD");
+         d.ENDDATE = moment((isNaN(eY) || eY < sY || eY < 1997 )? "2019" : eY + "-" + eM + "-01" ).format("YYYY-MM-DD");
+//        console.log("id: ", d.DATASETID);
+//        console.log("startdate moment: "+ JSON.stringify(d.STARTDATE));
+//         console.log("neddate moment: "+ JSON.stringify(d.ENDDATE));
+         d.STARTDATE = dateFormat.parse(d.STARTDATE);
+         d.ENDDATE = dateFormat.parse(d.ENDDATE);
+         console.log("id: ", d.DATASETID);
+        console.log("startdate d3 "+ JSON.stringify(d.STARTDATE));
+         console.log("enddate d3 "+ JSON.stringify(d.ENDDATE));
+         d.sYear = new Date(d.STARTDATE).getFullYear();
+         d.eYear = new Date(d.ENDDATE).getFullYear();
+         d.sMonth = new Date(d.STARTDATE).getMonth();
+         d.eMonth = new Date(d.ENDDATE).getMonth();
+         console.log("d3 sy: "+ d.sYear);
+         console.log("d3 sm: "+ d.sMonth);
+         console.log("d3 ey: "+ d.eYear);
+         console.log("d3 em: "+ d.eMonth);
+//         console.log("neddate moment: "+ JSON.stringify(d.ENDDATE));
+//         d.STARTDATE = new Date(d.STARTDATE);
+         d.DATASETID = +d.DATASETID;
+//        // The next 3 lines can be skipped! 
+//        var parseDate = d3.time.format("%m %Y").parse;
+//         
+//         var formatDate = d3.time.format("%Y");
+//       
+//         //d.year  =  parseDate.parse(d.year.toString());
+//         parseDate((d.STARTDATE).toString());
+         
+         //d.dd = formatDate.parse(d.date);
+        // d.month = d3.time.month(d.STARTDATE);
+         });
+        /****     Step1: Create the dc.js chart objects to div   ****/
+       var timeChart = dc.barChart(".content");
+       var monthChart = dc.lineChart("#monthChart")
+  
+              /*********  Step2:	Run data through crossfilter	  ***/   
+      var ndx = crossfilter(data);
+      
+      /******   Step3: 	Create Dimension that we'll need   ******/
+      var timeline = ndx.dimension(function(d){/*console.log("datasetID: ", d.DATASETID, "dimensionS:  ",d.sYear, "dimensionE: ", d.eYear);*/ return  d.sYear;});
+            console.log("timeline: ", JSON.stringify(timeline));
+
+      var timelinegp = timeline.group().reduceCount(function(d) {/*console.log("timelinegpS:", d.STARTDATE, "timelinegpS:", d.ENDDATE); if (d.STARTDATE >= d.sYear && d.ENDDATE <= d.eYear)*/ return d.DATASETID;});
+      console.log("timelinegp: ", JSON.stringify(timelinegp.all()));
+      var months = ndx.dimension(function (d) { return d.month;});
+      var monthlyGroup = months.group().reduceCount(function (d) {
+        return d.DATASETID;
+    });
+      var minDate = timeline.bottom(1)[0];
+      //console.log("min: "+JSON.stringify( minDate.STARTDATE));
+      minDate = new Date(minDate.STARTDATE);
+      var maxDate = timeline.top(1)[0];
+      //console.log("max: "+JSON.stringify( maxDate.ENDDATE));
+        maxDate = new Date(maxDate.ENDDATE);      
+                 // For datatable
+      /********* Step4: Create the Visualisations ****/
+      timeChart
+              .width(1000)
+              .height(100)
+              .x(d3.time.scale().domain([minDate, maxDate]))
+              .xAxis(d3.svg.axis()
+                     //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
+                     .orient("bottom")
+                     .tickFormat(d3.time.format("%Y")))
+            
+              .brushOn(false)
+              //.yAxis().ticks(8)
+              .margins({top: 10, right: 20, bottom: 30, left: 40})
+              .dimension(timeline)
+             // .mouseZoomable(true)
+              //.rangeChart(monthChart)
+              .group(monthlyGroup)
+              //.elasticY(true)
+              //.colors(["#E2F2FF", "#C4E4FF", "#9ED2FF", "#81C5FF", "#6BBAFF", "#51AEFF", "#36A2FF", "#1E96FF", "#0089FF", "#0061B5"])
+              //.colorDomain([0,maxDate])
+//                .on("renderlet", function(timeChart)
+//             {
+//                 timeChart.SelectAll("rect").on("click", function(d){
+//                     console.log("click!", d);
+//                 });
+//             });
+//         .transitionDuration(500)   
+//        .rangeChart(monthChart)
+//        .brushOn(false)      
+              //.render();
+    
+    monthChart
+        .renderArea(true)
+        .width(990)
+        .height(400)
+        //.transitionDuration(1000)
+        //.mouseZoomable(true)
+        .margins({top: 10, right: 20, bottom: 30, left: 40})
+        .dimension(timeline)
+        .brushOn(false)
+        .elasticY(true)
+        .group(timelinegp)
+        .rangeChart(timeChart)
+        .x(d3.time.scale().domain([minDate, maxDate]))
+        
+        //.y(d3.scale.linear().domain([dsNumMin, dsNumMax]))
+        .round(d3.time.month.round)
+        .xUnits(d3.time.months)
+        //.xAxis().ticks(20)
+
+//        .yAxis(d3.svg.axis()
+//        .ticks(10));
+          .xAxis(d3.svg.axis()
+                //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
+                .orient("bottom")
+                .tickFormat(d3.time.format("%b %Y")));
+        
+        //monthChart.yAxis().ticks(16);
+        monthChart.render();
+        //timeChart.render();
+        //dc.renderAll();
+    });
+       
+    </script>
+</body>
+</html>
