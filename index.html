@@ -31,6 +31,20 @@ and open the template in the editor.
         <!--<h1> Timeline with dc.js</h1>-->
         <!--    <a class="reset" href="javascript:timeChart.filterAll();dc.redrawAll();">reset</a>-->
    </div>
+    <div>
+        <div id="dc-data-count">
+            <h2>results
+      <span>
+        <span class="filter-count"></span>
+         
+      </span>
+    </h2>
+            
+        </div>
+        <table id="table_view">
+            
+        </table>
+    </div>
     
 <script>
 //    String.prototype.replaceAt=function(character) {
@@ -45,11 +59,12 @@ and open the template in the editor.
 /***       Step0: Load data ****/	
        var dataStr= [];
        var dateFormat = d3.time.format("%Y-%m-%d");
+       var numberFormat = d3.format('.2f');
        d3.json("data/testdata.json", function (data) {
          data.forEach(function (d){
         d.STARTDATE = moment(d.STARTDATE, ['D.MM.YY','D.M.YY','DD.MM.YY','DD.M.YY','DD:MM:YY','D/M/YYYY', 'DD-MM-YYYY', 'MM-DD-YYYY', 
-            'DD/MM/YYYY', 'DD/MM/YYYY HH:MM', 'DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY DD MM', 'DD:MM:YYYY', 'DD.MM.YYYY', 'YYYY', 'YYYY MM']
-);
+            'DD/MM/YYYY', 'DD/MM/YYYY HH:MM', 'DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY DD MM', 
+            'DD:MM:YYYY', 'DD.MM.YYYY', 'YYYY', 'YYYY MM', 'YYYY-MM', 'YYYY:MM', 'YYYY/MM']);
          var date = new Date(d.STARTDATE);
          
          var y = date.getFullYear();
@@ -62,25 +77,29 @@ and open the template in the editor.
 //         d.STARTDATE = new Date(d.STARTDATE);
          d.DATASETID = +d.DATASETID;
 //        // The next 3 lines can be skipped! 
-//        var parseDate = d3.time.format("%m %Y").parse;
+////        var parseDate = d3.time.format("%m %Y").parse;
+////         
+////         var formatDate = d3.time.format("%Y");
+////       
+////         //d.year  =  parseDate.parse(d.year.toString());
+////         parseDate((d.STARTDATE).toString());
 //         
-//         var formatDate = d3.time.format("%Y");
-//       
-//         //d.year  =  parseDate.parse(d.year.toString());
-//         parseDate((d.STARTDATE).toString());
-         
-         //d.dd = formatDate.parse(d.date);
-        // d.month = d3.time.month(d.STARTDATE);
+//         //d.dd = formatDate.parse(d.date);
+//        // d.month = d3.time.month(d.STARTDATE);
          });
         /****     Step1: Create the dc.js chart objects to div   ****/
        var timeChart = dc.barChart(".content");
-       var monthChart = dc.lineChart("#monthChart")
-  
+       var monthChart = dc.lineChart("#monthChart");
+       var dataTable = dc.dataTable("#table_view");
               /*********  Step2:	Run data through crossfilter	  ***/   
       var ndx = crossfilter(data);
-      
+      var all = ndx.groupAll();
+      dc.dataCount("#dc-data-count")
+    .dimension(ndx)
+    .group(all);
       /******   Step3: 	Create Dimension that we'll need   ******/
-      var timeline = ndx.dimension(function(d){/*console.log("sdate:  ",d.STARTDATE);*/ return d.year;});
+      var timeline = ndx.dimension(function(d){console.log("id: ", d.DATASETID,"sdate:  ",d.STARTDATE, "year: ", d.year); return d.year;});
+      console.log("timeline: "+JSON.stringify(timeline.bottom(data.length)));
       var timelinegp = timeline.group().reduceCount(function(d) {/*console.log("dsID:  ", d.DATASETID);*/ return d.DATASETID;});
       var months = ndx.dimension(function (d) { return d.month;});
       var monthlyGroup = months.group().reduceCount(function (d) {
@@ -88,7 +107,6 @@ and open the template in the editor.
     });
       var minDate = timeline.bottom(1)[0];
       minDate = new Date(minDate.STARTDATE);
-      console.log()
       var maxDate = timeline.top(1)[0];
       maxDate = new Date(maxDate.STARTDATE);
       
@@ -112,7 +130,7 @@ and open the template in the editor.
               .margins({top: 10, right: 20, bottom: 30, left: 40})
               .dimension(timeline)
              // .mouseZoomable(true)
-              //.rangeChart(monthChart)
+              .rangeChart(monthChart)
               .group(monthlyGroup)
               //.elasticY(true)
               //.colors(["#E2F2FF", "#C4E4FF", "#9ED2FF", "#81C5FF", "#6BBAFF", "#51AEFF", "#36A2FF", "#1E96FF", "#0089FF", "#0061B5"])
@@ -123,12 +141,12 @@ and open the template in the editor.
 //                     console.log("click!", d);
 //                 });
 //             });
-         .transitionDuration(500)
-        .centerBar(true);
-           timeChart.yAxis().ticks(10);   
+//         .transitionDuration(500)
+//        .centerBar(true);
+//           timeChart.yAxis().ticks(10);   
 //        .rangeChart(monthChart)
 //        .brushOn(false)      
-        //.render();
+       .render();
     
     monthChart
         .renderArea(true)
@@ -143,7 +161,8 @@ and open the template in the editor.
         .group(timelinegp)
         .rangeChart(timeChart)
         .x(d3.time.scale().domain([minDate, maxDate]))
-        
+        .elasticY(true)
+        .renderHorizontalGridLines(true)
         //.y(d3.scale.linear().domain([dsNumMin, dsNumMax]))
         .round(d3.time.month.round)
         .xUnits(d3.time.months)
@@ -154,12 +173,40 @@ and open the template in the editor.
           .xAxis(d3.svg.axis()
                 //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
                 .orient("bottom")
-                .tickFormat(d3.time.format("%b %Y")));
+                .tickFormat(d3.time.format("%b %Y")))
+        
+        // Title can be called by any stack layer.
+        .title(function (d) {
+//            var value = d.value.avg ? d.value.avg : d.value;
+//            if (isNaN(value)) {
+//                value = 0;
+//            }
+            return dateFormat(d.key) + '\n' + numberFormat(d.value);
+        });
         
         //monthChart.yAxis().ticks(16);
         monthChart.render();
-        timeChart.render();
-        //dc.renderAll();
+        //timeChart.render();
+        
+//        var dataview = ndx.dimension(timeline).group(function() { return "Dataset ID"
+//            })
+//            .size(data.length)
+//        .columns([
+//            function(d) { return d.DATASETID; }
+//    ]);
+//    
+//        console.log("dataview: ", JSON.stringify(dataview));
+        // Table of  data
+       dataTable.width(200).height(200)
+       .dimension(timeline)
+            .group(function() { return "Dataset ID"
+            })
+            .size(data.length)
+        .columns([
+            function(d) { console.log("length ", data.length);return d.DATASETID; }
+    ]);
+    dc.renderAll();
+        
     });
        
     </script>
