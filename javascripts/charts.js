@@ -166,35 +166,45 @@
         .on("mouseover", function (d, i){
          d3.select(this).style("font-weight", "Bold");
          var ids = dataSet[d.text]['datasetIds'];
-         ids = ids.toString().split(", ");
-         console.log("ids ", JSON.stringify(ids));
-         var table = document.createElement('table');
-         table.setAttribute('id',d.text);
-         
-         var tbHead = document.createElement('th');
-         var header = document.createTextNode("dataset IDs");
-         tbHead.appendChild(header);
-         table.appendChild(tbHead);
-//         if (ids.length < 10) {
-            for (var i = 0; i < ids.length; i++){
-                var tr = document.createElement('tr');
-               var td1 = document.createElement('td');
+         document.getElementById("dsIdList").innerHTML=ids;
+         //var br = document.createElement("br");
+         //var idList = document.createTextNode(ids);
+         //d.appendChild(idList);
+         //d.appendChild(br);
 
-               var text1 = document.createTextNode(ids[i]);
-               td1.appendChild(text1);
-               tr.appendChild(td1);
-               table.appendChild(tr);
-           }
-        document.getElementById("idList").appendChild(table);
+//         ids = ids.toString().split(", ");
+//         console.log("ids ", JSON.stringify(ids));
+//         var table = document.createElement('table');
+//         table.setAttribute('id',d.text);
+//         
+//         var tbHead = document.createElement('th');
+//         var header = document.createTextNode("dataset IDs");
+//         tbHead.appendChild(header);
+//         table.appendChild(tbHead);
+////         if (ids.length < 10) {
+//            for (var i = 0; i < ids.length; i++){
+//                var tr = document.createElement('tr');
+//               var td1 = document.createElement('td');
+//
+//               var text1 = document.createTextNode(ids[i]);
+//               td1.appendChild(text1);
+//               tr.appendChild(td1);
+//               table.appendChild(tr);
+//           }
+//        document.getElementById("idList").appendChild(table);
 //         }
 //         else ()
         })
       .on("mouseout", function (d, i){
          d3.select(this).style("font-weight", "normal");
-         var tbId = d.text;
-         var tb = document.getElementById(tbId);
-         if (tb) 
-            tb.parentNode.removeChild(tb);
+          document.getElementById("dsIdList").innerHTML="";
+
+//         var tbId = d.text;
+//         var d = document.getElementById("dsIdList");
+//         var b = document.getElementByTagName("br");
+//         if (b) b.parentNode.removeChild(b);
+//         if (d) 
+//            d.parentNode.removeChild(d);
       });
       }
 ////////////////////////////////////////////////////////////////////////////////
