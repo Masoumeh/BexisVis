@@ -73,6 +73,7 @@
 //         //d.dd = formatDate.parse(d.date);
 //        // d.month = d3.time.month(d.STARTDATE);
          });
+//         console.log("dataSet: ", JSON.stringify(dataSet));
 
         /****     Step1: Create the dc.js chart objects to div   ****/
        var timeChart = dc.barChart(".content");
@@ -133,29 +134,69 @@
               .words(Object.keys(dataSet).map(function(d) {
                  var freq = parseInt(dataSet[d]['frequency']);
                  freq = rscale(freq);
-                 return {text: d, size: freq};
+                 var obj = {text: d, size: freq, ids: dataSet[d]['datasetIds']};
+                 //console.log("obj: ", JSON.stringify(obj));
+                 return {text: d, size: freq, ids: dataSet[d]['datasetIds']};
               }))
               .padding(5)
               .rotate(function() { return ~~(Math.random() * 2) * 90; })
               .font("Impact")
               .fontSize(function(d) { return d.size; })
-              .on("end", function (words) {
-         d3.select("#cloud").append("svg")
+              .on("end", draw)
+              .start();
+      function draw(words) {
+        d3.select("#cloud").append("svg")
         .attr("width", 800)
         .attr("height", 800)
-      .append("g")
+        .append("g")
         .attr("transform", "translate(400,400)")
-      .selectAll("text")
+        .selectAll("text")
         .data(words)
-      .enter().append("text")
+        .enter().append("text")
         .style("font-size", function(d) { return d.size + "px"; })
+        
+        .style("fill", function(d, i) { return fill(i); })
+        .style("display", "inline-block")
+        .style("margin-right", "10px" )
         .attr("text-anchor", "middle")
         .attr("transform", function(d) {
-          return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
         })
-        .text(function(d) { return d.text; });
-              })
-              .start();
+        .text(function(d) { return d.text; })
+        .on("mouseover", function (d, i){
+         d3.select(this).style("font-weight", "Bold");
+         var ids = dataSet[d.text]['datasetIds'];
+         ids = ids.toString().split(", ");
+         console.log("ids ", JSON.stringify(ids));
+         var table = document.createElement('table');
+         table.setAttribute('id',d.text);
+         
+         var tbHead = document.createElement('th');
+         var header = document.createTextNode("dataset IDs");
+         tbHead.appendChild(header);
+         table.appendChild(tbHead);
+//         if (ids.length < 10) {
+            for (var i = 0; i < ids.length; i++){
+                var tr = document.createElement('tr');
+               var td1 = document.createElement('td');
+
+               var text1 = document.createTextNode(ids[i]);
+               td1.appendChild(text1);
+               tr.appendChild(td1);
+               table.appendChild(tr);
+           }
+        document.getElementById("idList").appendChild(table);
+//         }
+//         else ()
+        })
+      .on("mouseout", function (d, i){
+         d3.select(this).style("font-weight", "normal");
+         var tbId = d.text;
+         var tb = document.getElementById(tbId);
+         if (tb) 
+            tb.parentNode.removeChild(tb);
+      });
+      }
 ////////////////////////////////////////////////////////////////////////////////
 /////////////Bubble Chart///////////////////////////////////////////////////////
 //        bubbleChart.width(990)
