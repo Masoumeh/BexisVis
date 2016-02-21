@@ -13,6 +13,8 @@
        var dateFormat = d3.time.format("%Y-%m-%d");
        var numberFormat = d3.format('.2f');
        var dataSet = {};//new Object;//{word: "", frequency: 0, datasetIds: ""};
+       var dataSet2 = {};
+       var dateObj = {};
        var words = [];
        var cnt = 0;
        d3.json("data/testData2.json", function (data) {
@@ -23,43 +25,70 @@
          var date = new Date(d.STARTDATE);
          
          var y = date.getFullYear();
-         var m = date.getMonth() + 1
+         var m = date.getMonth() + 1;
          // For invalid year values like "200" or those which don't have aany value (i.e. STARTDATE = "")
          d.STARTDATE = moment((isNaN(y) || y < 1997 || y > moment())? "1996" : y + "-" + m + "-01" ).format("YYYY-MM-DD");
          d.STARTDATE = dateFormat.parse(d.STARTDATE);
          d.year = d3.time.year(d.STARTDATE);
          d.month = d3.time.month(d.STARTDATE);
-//         d.STARTDATE = new Date(d.STARTDATE);
-         d.DATASETID = +d.DATASETID;
-         d.KEYWORDS = d.KEYWORDS.split(",");
-         d.PROSERVICE = d.PROSERVICE.split(",");
-         d.ENVDESCR = d.ENVDESCR.split(",");
-         d.BIODATATYPE = d.BIODATATYPE.split(",");
-         d.wordNet = d.KEYWORDS.concat(d.PROSERVICE, d.ENVDESCR, d.BIODATATYPE);
-         d.dataSet = dataSet;
-        for (var i = 0; i < d.wordNet.length; i++) {
-             if (d.wordNet[i].toLowerCase() === "other" || d.wordNet[i].toLowerCase() === "none" 
-                     || d.wordNet[i].toLowerCase() === "") {
-                d.wordNet.splice(i, 1);
+         var wordNet = d.KEYWORDS.split(",");
+         wordNet = wordNet.concat(d.PROSERVICE.split(','), d.ENVDESCR.split(','), d.BIODATATYPE.split(','));
+        
+         
+        for (var i = 0; i < wordNet.length; i++) {
+            //console.log('wordnet',JSON.stringify(wordNet));
+             if (wordNet[i].toLowerCase() === "other" || wordNet[i].toLowerCase() === "none" 
+                     || wordNet[i].toLowerCase() === "") {
+                wordNet.splice(i, 1);
                 i--;
             }
              else {
-//                 console.log("valid: ", d.wordNet[i]);
-                d.wordNet[i] = d.wordNet[i].replace(/[^\w]/gi, '');
-                if (!dataSet.hasOwnProperty(d.wordNet[i])) {
-                  dataSet[d.wordNet[i]] = {
+                wordNet[i] = wordNet[i].replace(/[^\w]/gi, '');
+                if (!dataSet.hasOwnProperty(wordNet[i])) {
+                  dataSet[wordNet[i]] = {
                     'frequency': 1,
                     'datasetIds': d.DATASETID
+                   // 'startDates': d.STARTDATE
                   };
                 } else {
-//                    console.log("tekrari: ", d.wordNet[i]);
-                  dataSet[d.wordNet[i]] = {
-                    'frequency': dataSet[d.wordNet[i]]['frequency'] + 1, 
-                    'datasetIds': dataSet[d.wordNet[i]]["datasetIds"].toString() + ", " + d.DATASETID.toString()
-                  }
+                    var dates = [];
+                            dates = dataSet[wordNet[i]]['startDates'];
+                  dataSet[wordNet[i]] = {
+                    'frequency': dataSet[wordNet[i]]['frequency'] + 1, 
+                    'datasetIds': dataSet[wordNet[i]]['datasetIds'].toString() + ", " + d.DATASETID.toString()
+                    //'startDate': dates.push(d.STARTDATE)
+                  };
                 }
+                
+                
             }
          };
+         
+          
+         if(dateObj[d.STARTDATE] === undefined) {
+             dateObj[d.STARTDATE] = wordNet;
+         } else {
+             var tmp = dateObj[d.STARTDATE];
+             wordNet.forEach(function(str) {
+           
+                 if(tmp.indexOf(str) === -1) {
+                     dateObj[d.STARTDATE].push(str);
+                 }
+             
+         });
+         }
+         
+//         if (!dateObj.hasOwnProperty(d.STARTDATE)) {
+//             dateObj[d.STARTDATE] = {
+//                 'words': wordNet
+//             };
+//         }
+//         else {
+//             dateObj[d.STARTDATE] = {
+//                 'words': dateObj[d.STARTDATE]['words'].concat(wordNet)
+//             };
+//         }
+         
 //         d.words = dataSet.keys();
 
 //        // The next 3 lines can be skipped! 
@@ -73,7 +102,6 @@
 //         //d.dd = formatDate.parse(d.date);
 //        // d.month = d3.time.month(d.STARTDATE);
          });
-//         console.log("dataSet: ", JSON.stringify(dataSet));
 
         /****     Step1: Create the dc.js chart objects to div   ****/
        var timeChart = dc.barChart(".content");
@@ -93,58 +121,43 @@
       var monthlyGroup = months.group().reduceCount(function (d) {
         return d.DATASETID;
       });
-      var wordDimension = ndx.dimension(function (d) {
-        return Object.keys(dataSet);
-      });
-      var wordGroup = wordDimension.group().reduceCount(//add
-                    function(p, v) {
-                        ++p.count;
-                        p.datasetCount += +v.key()['datasetIds'];
-                        p.frequency = +v.key()['frequency'];
-                        return p;
-                    },
-                    //remove
-                    function(p, v) {
-                        --p.count;
-                        p.datasetCount -= +v.key()['datasetIds'];
-                        p.frequency = +v.key()['frequency'];
-                        return p;
-                    },
-                    //init
-                    function() {
-                        return {count:0, frequency:0, datasetCount:0};
-                    }
-                 );
       var minDate = timeline.bottom(1)[0];
       minDate = new Date(minDate.STARTDATE);
       var maxDate = timeline.top(1)[0];
       maxDate = new Date(maxDate.STARTDATE);
       
       var runMin = +timeline.bottom(1)[0];
-      
       var runMax = +timeline.top(1)[0];
+      var value;;
+
+      console.log("dataset: ", JSON.stringify(dataSet));
 //////////////////////////////////////////////////
 // word cloud
 /////////////////////////////////////////////////
       var fill = d3.scale.category20();
       var rscale = d3.scale.linear()
-      .domain([1, 500]).range([10,50]);
+             .domain([0, d3.max(Object.keys(dataSet), function(d) {
+                return parseInt(dataSet[d]['frequency']);
+              })
+             ]).range([10,40]);
+      
       d3.layout.cloud()
-              .size([700, 700])
-              .words(Object.keys(dataSet).map(function(d) {
-                 var freq = parseInt(dataSet[d]['frequency']);
-                 freq = rscale(freq);
-                 var obj = {text: d, size: freq, ids: dataSet[d]['datasetIds']};
-                 //console.log("obj: ", JSON.stringify(obj));
-                 return {text: d, size: freq, ids: dataSet[d]['datasetIds']};
-              }))
-              .padding(5)
-              .rotate(function() { return ~~(Math.random() * 2) * 90; })
-              .font("Impact")
-              .fontSize(function(d) { return d.size; })
-              .on("end", draw)
-              .start();
-      function draw(words) {
+        .size([700, 700])
+        .words(Object.keys(dataSet).map(function(d) {
+           var freq = parseInt(dataSet[d]['frequency']);
+           freq = rscale(freq);
+           var obj = {text: d, size: freq, ids: dataSet[d]['datasetIds']};
+           //console.log("obj: ", JSON.stringify(obj));
+           return {text: d, size: freq, ids: dataSet[d]['datasetIds']};
+        }))
+        .padding(5)
+        .rotate(function() { return ~~(Math.random() * 2) ; })
+        .font("Impact")
+        .fontSize(function(d) { return d.size; })
+        .on("end", draw)
+        .start();
+      
+      function draw( words) {
         d3.select("#cloud").append("svg")
         .attr("width", 800)
         .attr("height", 800)
@@ -154,7 +167,6 @@
         .data(words)
         .enter().append("text")
         .style("font-size", function(d) { return d.size + "px"; })
-        
         .style("fill", function(d, i) { return fill(i); })
         .style("display", "inline-block")
         .style("margin-right", "10px" )
@@ -163,10 +175,10 @@
                 return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
         })
         .text(function(d) { return d.text; })
-        .on("mouseover", function (d, i){
-         d3.select(this).style("font-weight", "Bold");
-         var ids = dataSet[d.text]['datasetIds'];
-         document.getElementById("dsIdList").innerHTML=ids;
+        .on("click", function (d, i){
+            d3.select(this).style("font-weight", "Bold");
+            var ids = dataSet[d.text]['datasetIds'];
+            document.getElementById("dsIdList").innerHTML=ids;
          //var br = document.createElement("br");
          //var idList = document.createTextNode(ids);
          //d.appendChild(idList);
@@ -194,10 +206,10 @@
 //        document.getElementById("idList").appendChild(table);
 //         }
 //         else ()
-        })
-      .on("mouseout", function (d, i){
-         d3.select(this).style("font-weight", "normal");
-          document.getElementById("dsIdList").innerHTML="";
+        });
+//      .on("mouseout", function (d, i){
+//         d3.select(this).style("font-weight", "normal");
+//          document.getElementById("dsIdList").innerHTML="";
 
 //         var tbId = d.text;
 //         var d = document.getElementById("dsIdList");
@@ -205,89 +217,107 @@
 //         if (b) b.parentNode.removeChild(b);
 //         if (d) 
 //            d.parentNode.removeChild(d);
-      });
+//      });
       }
 ////////////////////////////////////////////////////////////////////////////////
 /////////////Bubble Chart///////////////////////////////////////////////////////
-//        bubbleChart.width(990)
-//                    .height(250)
-//                    .margins({top: 10, right: 50, bottom: 30, left: 40})
-//                    .dimension(wordDimension)
-//                    .group(wordGroup)
-//                    .transitionDuration(1500)
-////                    .colors(["#a60000", "#ff0000", "#ff4040", "#ff7373", "#67e667", "#39e639", "#00cc00"])
-//                    .colorDomain([-12000, 12000])
-//                    .colorAccessor(function (d) {
-//                        return d.value.count;
-//                    })
-////                    .keyAccessor(function (p) {
-////                        return p.value.absGain;
-////                    })
-////                    .valueAccessor(function (p) {
-////                        return p.value.percentageGain;
-////                    })
-//                    .radiusValueAccessor(function (p) {
-//                        return p.value.frequency;
-//                    })
-//                    .maxBubbleRelativeSize(0.3)
-////                    .x(d3.scale.linear().domain([-2500, 2500]))
-////                    .y(d3.scale.linear().domain([-100, 100]))
-//                    .r(d3.scale.linear().domain([0, 4000]))
-////                    .elasticY(true)
-////                    .yAxisPadding(100)
-////                    .elasticX(true)
-////                    .xAxisPadding(500)
-////                    .renderHorizontalGridLines(true)
-////                    .renderVerticalGridLines(true)
-////                    .renderLabel(true)
-////                    .renderTitle(true)
-//                    .label(function (p) {
-//                       // return p.key.getFullYear();
-//                    })
-//                    .title(function (p) {
-////                        return p.key.getFullYear()
-////                                + "\n"
-////                                + "Index Gain: " + numberFormat(p.value.absGain) + "\n"
-////                                + "Index Gain in Percentage: " + numberFormat(p.value.percentageGain) + "%\n"
-////                                + "Fluctuation / Index Ratio: " + numberFormat(p.value.fluctuationPercentage) + "%";
-//                    });
-
-      
-
             // For datatable
       /********* Step4: Create the Visualisations ****/
+      var cacheFilter = [];
+      var cacheTimeLine = timeline;
       timeChart
               .width(1000)
               .height(100)
               .x(d3.time.scale().domain([minDate, maxDate]))
-              .xAxis(d3.svg.axis()
-                     //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
-                     .orient("bottom"))
-                     //.tickFormat(d3.time.format("%Y")))
+//              .xAxis(d3.svg.axis()
+//                     //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
+//                     .orient("bottom"))
+//                     //.tickFormat(d3.time.format("%Y")))
             
               //.brushOn(false)
               //.yAxis().ticks(8)
+//              .xAxis().tickFormat(function() {
+//         //function triggered onClick by element from DOM
+//             $(".contents").unbind().click(function() {
+////                  download(d3.csv.format(depthValue.top(500))."exportedData.csv")
+//                console.log("filtered: ", JSON.stringify(timelinegp.top(10)));
+//              });
+//        })
               .margins({top: 10, right: 20, bottom: 30, left: 40})
               .dimension(timeline)
              // .mouseZoomable(true)
               .rangeChart(monthChart)
               .group(monthlyGroup)
+              .renderlet(function(chart) {
+                  if(cacheFilter.length!==0) {
+                       var cloud = document.getElementById("cloud");
+                       var texts = cloud.getElementsByTagName("text");
+                       for(var i = 0; i<texts.length; i++) {
+                           texts[i].style.fontWeight = "normal";
+                       };
+                      for(var key in dateObj) {
+                          var d1 = new Date(key).getTime();
+                          var d2 = new Date(cacheFilter[0][1]).getTime();
+                          var d3 = new Date(cacheFilter[0][0]).getTime();
+                          if(d1<d2 && d1>d3) {
+                              dateObj[key].forEach(function(d){
+                                 
+                                  for(var i = 0; i<texts.length; i++) {
+                                     if (texts[i].innerHTML === d) {
+//                                         console.log("true");
+                                         texts[i].style.fontWeight = "bold";
+                                     } 
+                                     //else texts[i].style.fontWeight = "normal"; 
+                                         
+                                     };
+                              });
+                          }
+                      }
+                  //console.log("tet " + JSON.stringify(cacheTimeLine.top(10)));
+      }
+//                  chart.selectAll("rect").on("click", function(d) {
+//                      alert("mamad");
+//                  });
+               })
               //.elasticY(true)
               //.colors(["#E2F2FF", "#C4E4FF", "#9ED2FF", "#81C5FF", "#6BBAFF", "#51AEFF", "#36A2FF", "#1E96FF", "#0089FF", "#0061B5"])
               //.colorDomain([0,maxDate])
+              
+              
 //                .on("renderlet", function(timeChart)
 //             {
 //                 timeChart.SelectAll("rect").on("click", function(d){
-//                     console.log("click!", d);
-//                 });
-//             });
+//                     console.log("click!");
+//                 })
+//             })
+//          .renderlet(function(timeChart) {
+//              dc.events.trigger(function() {
+////                console.log(timeChart.filters());
+////console.log("filter: ", JSON.stringify(timelinegp.top(2)));
+//            });
+//        })
 //         .transitionDuration(500)
-//        .centerBar(true);
+//        .centerBar(true)
 //           timeChart.yAxis().ticks(10);   
 //        .rangeChart(monthChart)
-//        .brushOn(false)      
+//        .brushOn(false)
+//      .valueAccessor(function(p) { console.log(p); return p.value; })
+        .filterHandler(function(dimension, filter){ cacheFilter = filter; })
+//             dimension.filter(null);   
+//             if (filter.length !== 0) {
+//           
+//               dimension.filter(filter);
+//             }
+//        
+//            if(filter.length !== 0) {
+//              //  dimension.filter(filter);
+//            console.log(JSON.stringify(filter) + " " + JSON.stringify(timeline.top(10)));
+//            }
+//    	    return filter; // return the actual filter value
+//	})
+//
        .render();
-    
+//    console.log("filtered: ", JSON.stringify(timeline.top(10)));
     monthChart
         .renderArea(true)
         .width(990)
@@ -311,21 +341,30 @@
 
 //        .yAxis(d3.svg.axis()
 //        .ticks(10));
-          .xAxis(d3.svg.axis()
+        .xAxis(d3.svg.axis()
                 //.scale(d3.time.scale().domain([new Date(minDate), new Date(maxDate)]))
-                .orient("bottom")
-                .tickFormat(d3.time.format("%b %Y")))
-        
+            .orient("bottom")
+            .tickFormat(d3.time.format("%b %Y")))
+//         .on("renderlet", function(monthChart)
+//             {
+//                 monthChart.SelectAll("path").on("click", function(d){
+//                     console.log("click!");
+//                 })
+//             })
+//        .on("click", function(d) {
+//                alert("click");
+//              })
         // Title can be called by any stack layer.
         .title(function (d) {
-            var value = d.value;// ? d.value.avg : d.value;
+            value = d.value;// ? d.value.avg : d.value;
+//            console.log("d: ", JSON.stringify(d));
             if (isNaN(value)) {
                 value = 0;
             }
             return dateFormat(d.key) + '\n' + numberFormat(d.value);
         })
         .renderTitle(true);
-        
+        monthChart.onclick
         //monthChart.yAxis().ticks(16);
         monthChart.render();
         //timeChart.render();
