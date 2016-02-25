@@ -22,23 +22,27 @@
         d.STARTDATE = moment(d.STARTDATE, ['D.MM.YY','D.M.YY','DD.MM.YY','DD.M.YY','DD:MM:YY','D/M/YYYY', 'DD-MM-YYYY', 'MM-DD-YYYY', 
             'DD/MM/YYYY', 'DD/MM/YYYY HH:MM', 'DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY DD MM', 
             'DD:MM:YYYY', 'DD.MM.YYYY', 'YYYY', 'YYYY MM', 'YYYY-MM', 'YYYY:MM', 'YYYY/MM']);
+//        d.STARTDATE = d3.time.format( ['D.MM.YY','D.M.YY','DD.MM.YY','DD.M.YY','DD:MM:YY','D/M/YYYY', 'DD-MM-YYYY', 'MM-DD-YYYY', 
+//            'DD/MM/YYYY', 'DD/MM/YYYY HH:MM', 'DD.MM.YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'YYYY.MM.DD', 'YYYY DD MM', 
+//            'DD:MM:YYYY', 'DD.MM.YYYY', 'YYYY', 'YYYY MM', 'YYYY-MM', 'YYYY:MM', 'YYYY/MM']).parse(d.STARTDATE);
+
          var date = new Date(d.STARTDATE);
-         
          var y = date.getFullYear();
          var m = date.getMonth() + 1;
          // For invalid year values like "200" or those which don't have aany value (i.e. STARTDATE = "")
          d.STARTDATE = moment((isNaN(y) || y < 1997 || y > moment())? "1996" : y + "-" + m + "-01" ).format("YYYY-MM-DD");
          d.STARTDATE = dateFormat.parse(d.STARTDATE);
+//         console.log("year", d.year);
          d.year = d3.time.year(d.STARTDATE);
          d.month = d3.time.month(d.STARTDATE);
          var wordNet = d.KEYWORDS.split(",");
          wordNet = wordNet.concat(d.PROSERVICE.split(','), d.ENVDESCR.split(','), d.BIODATATYPE.split(','));
         
-         
+        var reg = new RegExp('[0-9]*$');
         for (var i = 0; i < wordNet.length; i++) {
             //console.log('wordnet',JSON.stringify(wordNet));
              if (wordNet[i].toLowerCase() === "other" || wordNet[i].toLowerCase() === "none" 
-                     || wordNet[i].toLowerCase() === "") {
+                     || wordNet[i].toLowerCase() === "" ) {
                 wordNet.splice(i, 1);
                 i--;
             }
@@ -130,17 +134,21 @@
       var runMax = +timeline.top(1)[0];
       var value;;
 
-      console.log("dataset: ", JSON.stringify(dataSet));
 //////////////////////////////////////////////////
 // word cloud
 /////////////////////////////////////////////////
-      var fill = d3.scale.category20();
+      var fill = d3.scale.category10();
+      var svg = d3.select('#cloud').append('svg')
+			.attr('width', 800)
+			.attr('height', 800)
+			;
       var rscale = d3.scale.linear()
              .domain([0, d3.max(Object.keys(dataSet), function(d) {
                 return parseInt(dataSet[d]['frequency']);
               })
              ]).range([10,40]);
-      
+      var fScale = d3.scale.linear()
+             .domain([10,40]).range([15,30]);
       d3.layout.cloud()
         .size([700, 700])
         .words(Object.keys(dataSet).map(function(d) {
@@ -156,77 +164,112 @@
         .fontSize(function(d) { return d.size; })
         .on("end", draw)
         .start();
-      
+      var cloudG;
       function draw( words) {
-        d3.select("#cloud").append("svg")
-        .attr("width", 800)
-        .attr("height", 800)
-        .append("g")
-        .attr("transform", "translate(400,400)")
+        var vis = svg.selectAll('text');
+        var text = svg.append('g')
+	.attr('transform', 'translate(400,400)')
         .selectAll("text")
         .data(words)
-        .enter().append("text")
-        .style("font-size", function(d) { return d.size + "px"; })
-        .style("fill", function(d, i) { return fill(i); })
-        .style("display", "inline-block")
-        .style("margin-right", "10px" )
-        .attr("text-anchor", "middle")
-        .attr("transform", function(d) {
-                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
-        })
-        .text(function(d) { return d.text; })
-        .on("click", function (d, i){
-            d3.select(this).style("font-weight", "Bold");
-            var ids = dataSet[d.text]['datasetIds'];
-            document.getElementById("dsIdList").innerHTML=ids;
-         //var br = document.createElement("br");
-         //var idList = document.createTextNode(ids);
-         //d.appendChild(idList);
-         //d.appendChild(br);
+        .enter()//.append("g")
+//       .append("rect")
+//          .style("fill", "red")
+              .append("text");
+        text 
+            .style("font-size", function(d) { return d.size + "px"; })
+            .style("fill", function(d, i) { return fill(i); })
+            .style("display", "inline-block")
+            .style("margin-right", "10px")
+            .attr("text-anchor", "middle")
+            .attr("transform", function(d) {
+                    return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+            })
+            .text(function(d) { return d.text; })
+//            .call(getBB)
+            .on("click", function (d, i){
+                d3.select(this)
+                   .style("font-weight", "Bold")
+                   //.style("font-size", function(d){return fScale(d.size);});
+                var ids = dataSet[d.text]['datasetIds'];
+                document.getElementById("dsIdList").innerHTML=ids;
+//                var bbox = this.getBBox();
+//                svg.insert("rect",":first-child")
+//                  .attr("x", bbox.x)
+//                  .attr("y", bbox.y)
+//                  .attr("width", bbox.width)
+//                  .attr("height", bbox.height)
+//                  .style("fill", "yellow");
 
-//         ids = ids.toString().split(", ");
-//         console.log("ids ", JSON.stringify(ids));
-//         var table = document.createElement('table');
-//         table.setAttribute('id',d.text);
-//         
-//         var tbHead = document.createElement('th');
-//         var header = document.createTextNode("dataset IDs");
-//         tbHead.appendChild(header);
-//         table.appendChild(tbHead);
-////         if (ids.length < 10) {
-//            for (var i = 0; i < ids.length; i++){
-//                var tr = document.createElement('tr');
-//               var td1 = document.createElement('td');
+           })
+//            .insert("rect")
+//                .attr("x", function(d){return d.bbox.x})
+//                .attr("y", function(d){return d.bbox.y})
+//                .attr("width", function(d){return d.bbox.width})
+//                .attr("height", function(d){return d.bbox.height})
+//                .style("fill", "yellow")
+            ;
+//           d3.selectAll("rect").attr("width", function(d){return d.bbox.width})
+//                .attr("height", function(d){return d.bbox.height})
+//          svg.select('g').selectAll("g")
+//             .insert('rect', ':first-child')
+//             .attr("x", function(d){return d.bbox.x})
+//             .attr("y", function(d){return d.bbox.y})
+//             .attr("width", function(d){return d.bbox.width})
+//             .attr("height", function(d){return d.bbox.height}) 
+//             .style("fill","red");
+//          var textNode = svg.selectAll("text");
+
+//            textNode.append("text") 
+//                .attr("text-anchor", "middle")
+//                .attr("dx", 0)
+//                .attr("dy", ".35em")
+//                .text(function(d) {
+//                    return d.text;
+//                }).call(getBB);   
+//            textNode.insert("rect","g")
+//                .attr("x", function(d){return d.bbox.x})
+//                .attr("y", function(d){return d.bbox.y})
+//                .attr("width", function(d){return d.bbox.width})
+//                .attr("height", function(d){return d.bbox.height})
+//                .style("fill", "yellow");
 //
-//               var text1 = document.createTextNode(ids[i]);
-//               td1.appendChild(text1);
-//               tr.appendChild(td1);
-//               table.appendChild(tr);
+//            function getBB(selection) {
+//                selection.each(function(d){d.bbox = this.getBBox();})
+//            }
+//           var txtElems = d3.selectAll("text");
+//           
+//           txtElems.each(function(t) {
+//                var box = this.getBBox();
+//                //var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+//                svg.insert("rect", "text")
+//                .attr("width", function(d){return d.bbox.width})
+//                .attr("height", function(d){return d.bbox.height})
+//                .style("fill", "yellow");
+//           });
+//           for (var i = 0; i < txtElems.length; i++) {
+//                var box = txtElems[i].getBBox();
+//                var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+//                rect.setAttribute("x", box.x);
+//                rect.setAttribute("y", box.y);
+//                rect.setAttribute("width", box.width);
+//                rect.setAttribute("height", box.height);
+//                rect.setAttribute("fill", "yellow");
+//                svg.insertBefore(rect, txtElems[i]);
 //           }
-//        document.getElementById("idList").appendChild(table);
-//         }
-//         else ()
-        });
-//      .on("mouseout", function (d, i){
-//         d3.select(this).style("font-weight", "normal");
-//          document.getElementById("dsIdList").innerHTML="";
-
-//         var tbId = d.text;
-//         var d = document.getElementById("dsIdList");
-//         var b = document.getElementByTagName("br");
-//         if (b) b.parentNode.removeChild(b);
-//         if (d) 
-//            d.parentNode.removeChild(d);
-//      });
       }
 ////////////////////////////////////////////////////////////////////////////////
 /////////////Bubble Chart///////////////////////////////////////////////////////
             // For datatable
       /********* Step4: Create the Visualisations ****/
+      
       var cacheFilter = [];
       var cacheTimeLine = timeline;
       timeChart
               .width(1000)
+//              .on("filtered", function(chart){ 
+//                  alert("test");
+//                 hello(timeline.top(Infinity));
+//              })
               .height(100)
               .x(d3.time.scale().domain([minDate, maxDate]))
 //              .xAxis(d3.svg.axis()
@@ -253,7 +296,8 @@
                        var cloud = document.getElementById("cloud");
                        var texts = cloud.getElementsByTagName("text");
                        for(var i = 0; i<texts.length; i++) {
-                           texts[i].style.fontWeight = "normal";
+                          texts[i].style.opacity = "0.5";//rscale(texts[i].size);
+                          texts[i].style.fontWeight = "normal";
                        };
                       for(var key in dateObj) {
                           var d1 = new Date(key).getTime();
@@ -261,29 +305,30 @@
                           var d3 = new Date(cacheFilter[0][0]).getTime();
                           if(d1<d2 && d1>d3) {
                               dateObj[key].forEach(function(d){
-                                 
                                   for(var i = 0; i<texts.length; i++) {
                                      if (texts[i].innerHTML === d) {
-//                                         console.log("true");
-                                         texts[i].style.fontWeight = "bold";
-                                     } 
-                                     //else texts[i].style.fontWeight = "normal"; 
+//                                        var freq = parseInt(dataSet[d]['frequency']);
+//                                         freq = rscale(freq);
+//                                         freq = fScale(freq);
+                                         texts[i].style.fontWeight  = "bold";
+                                         texts[i].style.opacity = "1.0";
+//                                         texts[i].style.display = "inline";
+//                                         texts[i].style.fontSize=freq;
+                                     }
+//                                     else if (texts[i].innerHTML !== d) {
+//                                         texts[i].style.opacity = "0.5";
+//                                     }
                                          
-                                     };
-                              });
+                                  };
+                              }); 
                           }
                       }
-                  //console.log("tet " + JSON.stringify(cacheTimeLine.top(10)));
       }
-//                  chart.selectAll("rect").on("click", function(d) {
-//                      alert("mamad");
-//                  });
                })
               //.elasticY(true)
               //.colors(["#E2F2FF", "#C4E4FF", "#9ED2FF", "#81C5FF", "#6BBAFF", "#51AEFF", "#36A2FF", "#1E96FF", "#0089FF", "#0061B5"])
               //.colorDomain([0,maxDate])
-              
-              
+                            
 //                .on("renderlet", function(timeChart)
 //             {
 //                 timeChart.SelectAll("rect").on("click", function(d){
@@ -317,10 +362,12 @@
 //	})
 //
        .render();
+       
 //    console.log("filtered: ", JSON.stringify(timeline.top(10)));
     monthChart
         .renderArea(true)
         .width(990)
+        
         .height(400)
         //.transitionDuration(1000)
         //.mouseZoomable(true)
