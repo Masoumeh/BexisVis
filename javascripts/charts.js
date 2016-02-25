@@ -73,7 +73,6 @@
              
             });
          }
-         
 
 //        // The next 3 lines can be skipped! 
 ////        var parseDate = d3.time.format("%m %Y").parse;
@@ -139,7 +138,7 @@
 			.attr('height', 800);
       // wordcloud creation
       d3.layout.cloud()
-        .size([700, 700])
+        .size([800, 800])
         // make a key/value structure out of dataSet to be used as word could data.
         // constructs an object with text, frequency dataset Ids structure
         .words(Object.keys(dataSet).map(function(d) {
@@ -178,22 +177,48 @@
             //Text click event
             .on("click", function (d, i){
                 // Firse reset the normal font weight of all texts
-                d3.selectAll("text").style("font-weight", "normal");  
+                d3.selectAll("text")
+                   .style("font-weight", "normal")
+                   .style("opacity", "1");  
                // Change font weight of the cliked text to bold and show the related dataset ids 
                 d3.select(this)
                    .style("font-weight", "Bold");
                 var ids = dataSet[d.text]['datasetIds'];
-                document.getElementById("dsIdList").innerHTML=ids;
-           });
+                var idArr = ids.toString().split(", ");
+                var tb = document.createElement("TABLE");
+                tb.style.backgroundColor= "lightblue";
+                var rowCount = Math.floor(idArr.length / 20); // 20 is the number of columns in each row
+                var cnt = 0;
+                //Add the data rows.
+                for (var i = 0; i <= rowCount; i++) {
+                    row = tb.insertRow(i);
+                    for (var j = 0; j < 30; j++) {
+                        var cell = row.insertCell(j);
+                        if (cnt < idArr.length) {
+                            cell.innerHTML = idArr[cnt];
+                            // Add left border to cells except the first one
+                            if (j !== 0) cell.style.borderLeft = "1px solid black";
+                            cell.style.borderBottom = "1px solid black";
+                            cell.style.borderUp = "1px solid black";
+                            cnt++;
+                        }
+                        else break;
+                   }
+                   // Add botom border to the rows except the last one
+                     row.style.borderBottom = "1pt solid black";
+                }
+                var dvTable = document.getElementById("dsIdList");
+                dvTable.innerHTML = "";
+                dvTable.appendChild(tb);
+            });
       }
 ////////////////////////////////////////////////////////////////////////////////
 /////////////Time Chart (bar chart)///////////////////////////////////////////////////////
       // variable for holing the min/max values of brush in timeChart
       var cacheFilter = [];
-      var cacheTimeLine = timeline;
       
       timeChart
-              .width(1000)
+              .width(500)
               .height(100)
               // define the domain of x axis
               .x(d3.time.scale().domain([minDate, maxDate]))
@@ -227,13 +252,9 @@
                                   for(var i = 0; i<texts.length; i++) {
                                       // if the text element holds the word (which is in the dataset with current date)
                                      if (texts[i].innerHTML === d) {
-//                                        var freq = parseInt(dataSet[d]['frequency']);
-//                                         freq = rscale(freq);
-//                                         freq = fScale(freq);
                                          // change the text style
                                          texts[i].style.fontWeight  = "bold";
                                          texts[i].style.opacity = "1.0";
-//                                         texts[i].style.fontSize=freq;
                                      }
                                   };
                               }); 
@@ -249,7 +270,7 @@
 
     monthChart
         .renderArea(true)
-        .width(990)
+        .width(500)
         .height(400)
         .margins({top: 10, right: 20, bottom: 30, left: 40})
         // define the dimension

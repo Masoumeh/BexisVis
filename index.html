@@ -23,52 +23,34 @@ and open the template in the editor.
 </head>
     
 <body style="margin: 0;height: 1000px;">
-<!--   
-     <div id='monthChart'></div>        
-
-    <div class='content'>
-            <a class="reset" href="javascript:timeChart.filterAll();dc.redrawAll();">reset</a>
-   </div>
-    <div>
-        <div id="dc-data-count">
-            <h2>results
-      <span>
-        <span class="filter-count"></span>
-         
-      </span>
-    </h2>        
+<div>
+    <div style="height:800px;">
+        <div style="width:500px;height:800px;display:inline-block;float: left">
+            <table id="charts">
+                <tr style="height:600px;">
+                    <td>
+                        <div id='monthChart'></div>
+                    </td>
+                </tr>
+                <tr style="height:200px;">
+                    <td>
+                        <div class='content'></div>
+                    </td>
+                </tr>
+            </table>
         </div>
-        <div id="table_view">
+        
+        <div id="cloud" style="width:800px;height:800px;display:inline-block;float: left"></div>
+        
+        <div></div>
+        
+    </div>
+    <div id="dsIdList" style="height: 800px;padding-top: 2em; margin-top: 10px;">
+<!--        <table id="dsIdList">
             
-        </div>
-        <div id="bubble_chart">
-            
-        </div>
-        <div>
-            
-        </div>
-    </div>-->
-         <div id='monthChart'></div>
-         <div class='content'></div>
-         <table><tr><td><div id="cloud" ></div></td>
-                 <td><div>
-                         <b>The dataset ids are:</b>
-         <div id="dsIdList">
-         </div>
-                     </div></td></tr></table>
-                       
-<!--         <table id = "inlineRow">
-             <tr>
-                 <td id="cloudRow">
-                   
-                 </td>
-             <td id="idList">
-                 
-             </td>
-             </tr>
-             
-         
-         </table>-->
-
+        </table>-->
+    </div>
+    
+</div>
 </body>
 </html>
